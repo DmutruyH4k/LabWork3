@@ -1,13 +1,43 @@
+import java.io.IOException;
 import java.util.Scanner;
+import java.io.FileWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class Gamming {
 
-    private static Scanner scan = new Scanner(System.in);
+    private static final Scanner scan = new Scanner(System.in);
 
     public static void main(String[] args){
-        String text = scan.nextLine();
-        String binaryText = toBinary(text);
-        System.out.println(binaryText);
+        try {
+            encoder();
+            decoder();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void encoder() throws IOException {
+        System.out.print("Введите текст: ");
+        String binaryText = toBinary(scan.nextLine());
+        System.out.print("Введите кодовое слово: ");
+        String gamma = toBinary(scan.nextLine());
+        String textForFile = XOR_Text(binaryText.toCharArray(), gamma.toCharArray());
+        FileWriter encodedText = new FileWriter("ШифроТекст.txt");
+        FileWriter gammaKey = new FileWriter("Ключ.txt");
+        encodedText.write(textForFile);
+        gammaKey.write(gamma);
+        encodedText.close();
+        gammaKey.close();
+    }
+
+    private static void decoder() throws IOException{
+        Path encodedText = Path.of("ШифроТекст.txt");
+        Path gammaKey = Path.of("Ключ.txt");
+        String binaryText = Files.readString(encodedText);
+        String gamma = Files.readString(gammaKey);
+        String decodedBinary = XOR_Text(binaryText.toCharArray(), gamma.toCharArray());
+        System.out.println(toText(decodedBinary));
     }
 
     private static String toBinary(String text){
@@ -19,11 +49,20 @@ public class Gamming {
         return textInBits.toString();
     }
 
-    private static String gammaGenerator(char[] binaryText){
-        StringBuilder gamma = new StringBuilder();
-        for (int i = 0; i < binaryText.length; i++){
-            gamma.append((int)binaryText[0] ^ (int)binaryText[binaryText.length-1]);
+    private static String toText(String binaryText){
+        StringBuilder textInChars = new StringBuilder();
+        for (int i = 0; i < binaryText.length()/11; i++){
+            int bitsInInt = Integer.parseInt(binaryText.substring(i*11, (i+1)*11), 2);
+            textInChars.append((char) bitsInInt);
         }
-        return binaryText;
+        return textInChars.toString();
+    }
+
+    private static String XOR_Text(char[] textToCrypt, char[] gammaKey){
+        StringBuilder encoded = new StringBuilder();
+        for (int i = 0; i < textToCrypt.length; i++){
+            encoded.append((int) textToCrypt[i] ^ (int) gammaKey[i % gammaKey.length]);
+        }
+        return encoded.toString();
     }
 }
